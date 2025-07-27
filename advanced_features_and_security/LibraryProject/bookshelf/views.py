@@ -2,6 +2,8 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from .models import Book
 from django.contrib.auth.decorators import permission_required
+# ✅ Good (safe from SQL injection)
+Book.objects.filter(title__icontains=query)
 
 @permission_required('bookshelf.can_view_books', raise_exception=True)
 def book_list(request):
