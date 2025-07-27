@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from django.views.generic.detail import DetailView
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 
 from .models import Book  # <-- satisfies "Book.objects.all()"
 from .models import Library  # <-- satisfies "from .models import Library"
