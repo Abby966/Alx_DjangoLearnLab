@@ -51,6 +51,27 @@ CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 
 ]
+# === HTTPS & Security Settings ===
+
+# Redirect all HTTP requests to HTTPS
+SECURE_SSL_REDIRECT = True  # ✅ Redirects HTTP to HTTPS
+
+# HTTP Strict Transport Security
+SECURE_HSTS_SECONDS = 31536000  # ✅ One year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # ✅ Apply HSTS to subdomains
+SECURE_HSTS_PRELOAD = True  # ✅ Allow site to be preloaded in browser HSTS list
+
+# Secure cookies
+SESSION_COOKIE_SECURE = True  # ✅ Session cookies only sent over HTTPS
+CSRF_COOKIE_SECURE = True     # ✅ CSRF cookies only sent over HTTPS
+
+# Secure headers
+X_FRAME_OPTIONS = "DENY"  # ✅ Prevent clickjacking
+SECURE_CONTENT_TYPE_NOSNIFF = True  # ✅ Prevent MIME-type sniffing
+SECURE_BROWSER_XSS_FILTER = True    # ✅ Enable XSS filtering
+
+# Recommended: Set this to the domain name of your deployed site
+# ALLOWED_HOSTS = ['yourdomain.com']
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
