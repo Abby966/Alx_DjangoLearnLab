@@ -1,0 +1,24 @@
+{% extends "blog/base.html" %}
+{% block title %}All Posts{% endblock %}
+{% block content %}
+  <div class="flex-between">
+    <h2>Latest Posts</h2>
+    {% if user.is_authenticated %}
+      <a href="{% url 'post-create' %}">+ New Post</a>
+    {% endif %}
+  </div>
+
+  {% if posts %}
+    <ul class="post-list">
+      {% for post in posts %}
+        <li class="post-item">
+          <h3><a href="{% url 'post-detail' post.pk %}">{{ post.title }}</a></h3>
+          <p class="meta">By {{ post.author.username }} • {{ post.published_date|date:"M d, Y H:i" }}</p>
+          <p>{{ post.content|truncatewords:30 }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No posts yet.</p>
+  {% endif %}
+{% endblock %}
