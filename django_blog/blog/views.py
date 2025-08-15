@@ -1,4 +1,3 @@
-# blog/views.py
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -8,83 +7,60 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 
 from .models import Post
 from .forms import PostForm
-from .forms import RegisterForm, ProfileForm  # if you created these in the auth task
+from .forms import RegisterForm, ProfileForm  # keep these if you added auth earlier
 
-# -------- Blog Post CRUD --------
+
+# ---------- Post CRUD ----------
 
 class PostListView(ListView):
-    """
-    Shows all posts (newest first thanks to Post.Meta.ordering).
-    URL: /posts/   (also used for homepage "")
-    """
     model = Post
-    template_name = "blog/posts_list.html"
+    # default template will be blog/post_list.html
     context_object_name = "posts"
     paginate_by = 10  # optional
 
 class PostDetailView(DetailView):
-    """
-    Shows a single post.
-    URL: /posts/<pk>/
-    """
     model = Post
-    template_name = "blog/posts_detail.html"
+    # default template will be blog/post_detail.html
     context_object_name = "post"
 
 class PostCreateView(LoginRequiredMixin, CreateView):
-    """
-    Create a new post (auth required).
-    URL: /posts/new/
-    """
     model = Post
     form_class = PostForm
-    template_name = "blog/posts_form.html"
+    # default template will be blog/post_form.html
     success_url = reverse_lazy("post-list")
 
     def form_valid(self, form):
-        # Attach the logged-in user as author
         form.instance.author = self.request.user
         messages.success(self.request, "Post created.")
         return super().form_valid(form)
 
-class AuthorRequiredMixin(UserPassesTestMixin):
-    """
-    Only the post's author can edit or delete.
-    """
-    def test_func(self):
-        obj = self.get_object()
-        return obj.author == self.request.user
-
-class PostUpdateView(LoginRequiredMixin, AuthorRequiredMixin, UpdateView):
-    """
-    Edit a post (only by author).
-    URL: /posts/<pk>/edit/
-    """
+class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Post
     form_class = PostForm
-    template_name = "blog/posts_form.html"
+    # default template will be blog/post_form.html
+
+    def test_func(self):
+        return self.get_object().author == self.request.user
 
     def get_success_url(self):
         messages.success(self.request, "Post updated.")
         return reverse_lazy("post-detail", kwargs={"pk": self.object.pk})
 
-class PostDeleteView(LoginRequiredMixin, AuthorRequiredMixin, DeleteView):
-    """
-    Delete a post (only by author).
-    URL: /posts/<pk>/delete/
-    """
+class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Post
-    template_name = "blog/posts_confirm_delete.html"
+    # default template will be blog/post_confirm_delete.html
     success_url = reverse_lazy("post-list")
+
+    def test_func(self):
+        return self.get_object().author == self.request.user
 
     def delete(self, request, *args, **kwargs):
         messages.success(self.request, "Post deleted.")
         return super().delete(request, *args, **kwargs)
 
-# -------- Optional homepage: reuse the ListView --------
-# (django_blog/urls.py maps "" to blog.urls; see urls below)
 
-# -------- Auth views you added earlier (keep these if you have them) --------
+# ---------- Auth helpers (if you added the auth task) ----------
+
 def register(request):
     if request.method == "POST":
         form = RegisterForm(request.POST)
