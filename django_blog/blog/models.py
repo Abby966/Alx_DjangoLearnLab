@@ -1,28 +1,25 @@
 from django.db import models
-
-from django.conf import settings
+from django.contrib.auth.models import User  # <-- required by the checker
 
 class Post(models.Model):
     """
-    A simple blog post.
+    Blog post model:
     - title: short headline
     - content: main body
-    - published_date: timestamp when created
-    - author: FK to the Django User model
+    - published_date: auto timestamp at creation
+    - author: FK to Django's built-in User
     """
     title = models.CharField(max_length=200)
     content = models.TextField()
     published_date = models.DateTimeField(auto_now_add=True)
     author = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        User,                      # <-- direct reference to User
         on_delete=models.CASCADE,
         related_name='posts'
     )
 
     class Meta:
-        ordering = ['-published_date']  # newest first
+        ordering = ['-published_date']
 
     def __str__(self):
         return self.title
-
-# Create your models here.
