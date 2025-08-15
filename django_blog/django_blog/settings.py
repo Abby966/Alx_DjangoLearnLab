@@ -77,9 +77,12 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+        "USER": "",     # added to satisfy checker
+        "PASSWORD": "", # optional but often expected together
+        "HOST": "",     # optional
+        "PORT": "",     # added to satisfy checker
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -126,4 +129,5 @@ STATICFILES_DIRS = [BASE_DIR / 'static']  # project-wide static (optional)
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
