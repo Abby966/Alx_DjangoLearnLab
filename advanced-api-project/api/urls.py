@@ -1,11 +1,6 @@
-# api/urls.py
 from django.urls import path
 from .views import (
-    BookListView,
-    BookDetailView,
-    BookCreateView,
-    BookUpdateView,
-    BookDeleteView,
+    BookListView, BookDetailView, BookCreateView, BookUpdateView, BookDeleteView
 )
 
 urlpatterns = [
