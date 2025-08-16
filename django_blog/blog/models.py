@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.urls import reverse
-from django.utils.text import slugify  # add at top with other imports
+from django.utils.text import slugify
 
 class Tag(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -18,15 +18,14 @@ class Tag(models.Model):
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
+
 class Post(models.Model):
     title = models.CharField(max_length=200)
     content = models.TextField()
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="posts")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    # NEW: a post can have many tags; a tag can belong to many posts
-    tags = models.ManyToManyField(Tag, related_name="posts", blank=True)
+    tags = models.ManyToManyField(Tag, related_name="posts", blank=True)  # custom M2M
 
     class Meta:
         ordering = ["-created_at"]
@@ -36,6 +35,7 @@ class Post(models.Model):
 
     def get_absolute_url(self):
         return reverse("post-detail", kwargs={"pk": self.pk})
+
 
 class Comment(models.Model):
     post = models.ForeignKey("Post", on_delete=models.CASCADE, related_name="comments")
@@ -53,6 +53,7 @@ class Comment(models.Model):
     def get_absolute_url(self):
         # send users back to the post detail after create/update/delete
         return reverse("post-detail", kwargs={"pk": self.post.pk})
+
 
 
 
