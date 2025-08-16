@@ -1,9 +1,19 @@
 # blog/urls.py
 from django.urls import path
 from .views import (
-    PostListView, PostDetailView, PostCreateView, PostUpdateView, PostDeleteView,
-    CommentCreateView, CommentUpdateView, CommentDeleteView
+    PostListView,
+    PostDetailView,
+    PostCreateView,
+    PostUpdateView,
+    PostDeleteView,
+    CommentCreateView,
+    CommentDeleteView,
+    CommentUpdateView,  
+    PostsByTagListView,   # NEW
+    PostSearchListView,   # NEW
 )
+
+
 
 urlpatterns = [
     # Posts
@@ -17,5 +27,8 @@ urlpatterns = [
     path("post/<int:pk>/comments/new/", CommentCreateView.as_view(), name="comment-create"),  # ✅ checker wants this
     path("comment/<int:pk>/update/", CommentUpdateView.as_view(), name="comment-update"),
     path("comment/<int:pk>/delete/", CommentDeleteView.as_view(), name="comment-delete"),
+
+    path("tags/<slug:slug>/", PostsByTagListView.as_view(), name="posts-by-tag"),
+    path("search/", PostSearchListView.as_view(), name="search"),
 ]
 
