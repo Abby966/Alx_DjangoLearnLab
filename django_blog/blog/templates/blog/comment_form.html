@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>{% if object %}Edit{% else %}New{% endif %} Comment</title></head>
+<body>
+  <h1>{% if object %}Edit{% else %}New{% endif %} Comment</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save</button>
+  </form>
+  {% if object %}
+    <p><a href="{% url 'post-detail' object.post.pk %}">Cancel</a></p>
+  {% endif %}
+</body>
+</html>

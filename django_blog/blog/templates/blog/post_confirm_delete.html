@@ -1,0 +1,11 @@
+<!doctype html>
+<html>
+  <body>
+    <h1>Delete “{{ object.title }}”?</h1>
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit">Confirm delete</button>
+      <a href="{% url 'blog:post_detail' slug=object.slug %}">Cancel</a>
+    </form>
+  </body>
+</html>

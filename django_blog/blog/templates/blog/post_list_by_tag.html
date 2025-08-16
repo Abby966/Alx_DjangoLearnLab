@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+  <body>
+    {% include "blog/_search_form.html" %}
+    <h1>Posts tagged “{{ active_tag.name }}”</h1>
+    {% for post in posts %}
+      <article>
+        <h2><a href="{% url 'blog:post_detail' slug=post.slug %}">{{ post.title }}</a></h2>
+        <p>{{ post.content|truncatewords:40 }}</p>
+      </article>
+      <hr>
+    {% empty %}
+      <p>No posts for this tag yet.</p>
+    {% endfor %}
+  </body>
+</html>

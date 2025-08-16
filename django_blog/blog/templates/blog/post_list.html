@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+  <body>
+    {% include "blog/_search_form.html" %}
+    <h1>Latest Posts</h1>
+    {% for post in posts %}
+      <article>
+        <h2><a href="{% url 'blog:post_detail' slug=post.slug %}">{{ post.title }}</a></h2>
+        <p>{{ post.content|truncatewords:40 }}</p>
+        {% if post.tags.all %}
+          <p>
+            Tags:
+            {% for tag in post.tags.all %}
+              <a href="{% url 'blog:posts_by_tag' slug=tag.slug %}">#{{ tag.name }}</a>{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          </p>
+        {% endif %}
+      </article>
+      <hr>
+    {% empty %}
+      <p>No posts yet.</p>
+    {% endfor %}
+    <p><a href="{% url 'blog:post_create' %}">Create new post</a></p>
+  </body>
+</html>

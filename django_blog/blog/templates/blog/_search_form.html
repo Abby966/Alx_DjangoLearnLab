@@ -1,0 +1,5 @@
+<form action="{% url 'blog:search' %}" method="get" class="search-form">
+    <input type="text" name="q" value="{{ q|default:request.GET.q }}" placeholder="Search posts & tags…">
+    <button type="submit">Search</button>
+  </form>
+  
