@@ -6,10 +6,10 @@ from .views import (
     PostCreateView,
     PostUpdateView,
     PostDeleteView,
+       CommentCreateView, CommentUpdateView, CommentDeleteView
 )
 
 urlpatterns = [
-    # ✅ singular paths expected by the checker
     path("post/", PostListView.as_view(), name="post-list"),
     path("post/new/", PostCreateView.as_view(), name="post-create"),
     path("post/<int:pk>/", PostDetailView.as_view(), name="post-detail"),
@@ -22,4 +22,15 @@ urlpatterns = [
     path("posts/<int:pk>/", PostDetailView.as_view()),
     path("posts/<int:pk>/edit/", PostUpdateView.as_view()),
     path("posts/<int:pk>/delete/", PostDeleteView.as_view()),
+    # comments
+    path("post/<int:pk>/comment/new/", CommentCreateView.as_view(), name="comment-create"),  # pk = post id
+    path("comment/<int:pk>/update/", CommentUpdateView.as_view(), name="comment-update"),    # pk = comment id
+    path("comment/<int:pk>/delete/", CommentDeleteView.as_view(), name="comment-delete"),    # pk = comment id
+
+    # (optional) your old plural aliases can remain if you want backward compat
 ]
+
+
+    
+
+
