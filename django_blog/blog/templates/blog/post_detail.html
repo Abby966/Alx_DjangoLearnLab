@@ -32,6 +32,14 @@
     <li>No comments yet.</li>
   {% endfor %}
 </ul>
+<p>
+  Tags:
+  {% for t in post.tags.all %}
+    <a href="{% url 'posts-by-tag' t.slug %}">#{{ t.name }}</a>
+  {% empty %}
+    <em>No tags</em>
+  {% endfor %}
+</p>
 
 {% if user.is_authenticated %}
   <h3>Add a comment</h3>
@@ -39,10 +47,9 @@
     {% csrf_token %}
     {{ comment_form.as_p }}
     <button type="submit">Post Comment</button>
-  </form>
+</form>
 {% else %}
   <p><a href="{% url 'login' %}">Log in</a> to add a comment.</p>
 {% endif %}
 </body>
 </html>
-
