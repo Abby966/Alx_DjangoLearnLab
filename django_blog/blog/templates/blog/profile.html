@@ -1,0 +1,22 @@
+{% extends "blog/base.html" %}
+{% block title %}Your Profile{% endblock %}
+{% block content %}
+<h2>Profile</h2>
+<form method="post" novalidate>
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div>
+    <label>First name</label>
+    {{ form.first_name }} {{ form.first_name.errors }}
+  </div>
+  <div>
+    <label>Last name</label>
+    {{ form.last_name }} {{ form.last_name.errors }}
+  </div>
+  <div>
+    <label>Email</label>
+    {{ form.email }} {{ form.email.errors }}
+  </div>
+  <button type="submit">Save changes</button>
+</form>
+{% endblock %}
