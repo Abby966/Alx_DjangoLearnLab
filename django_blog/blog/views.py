@@ -17,12 +17,13 @@ class PostDetailView(DetailView):
     model = Post
     template_name = "blog/post_detail.html"
     context_object_name = "post"
-     def get_context_data(self, **kwargs):
+
+    def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["comments"] = self.object.comments.select_related("author").all()
-        # blank form for adding a comment (only shown if user is authenticated)
-        ctx["comment_form"] = CommentForm()
+        ctx["comment_form"] = CommentForm()  # blank form for new comment
         return ctx
+
 
 class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
