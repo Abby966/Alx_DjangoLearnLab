@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Search Results</title></head>
+<body>
+  <h1>Search Results</h1>
+
+  <form method="get" action="{% url 'search' %}">
+    <input type="text" name="q" placeholder="Search posts or tags..." value="{{ q }}">
+    <button type="submit">Search</button>
+  </form>
+
+  {% if q %}
+    <p>Results for: <strong>{{ q }}</strong></p>
+  {% endif %}
+
+  <ul>
+    {% for post in posts %}
+      <li>
+        <a href="{% url 'post-detail' post.pk %}">{{ post.title }}</a>
+        <div>
+          {% for t in post.tags.all %}
+            <a href="{% url 'posts-by-tag' t.slug %}">#{{ t.name }}</a>
+          {% endfor %}
+        </div>
+        <p>{{ post.content|truncatewords:25 }}</p>
+      </li>
+    {% empty %}
+      <li>No matching posts.</li>
+    {% endfor %}
+  </ul>
+
+  <p><a href="{% url 'post-list' %}">Back to all posts</a></p>
+</body>
+</html>
