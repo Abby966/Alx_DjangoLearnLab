@@ -1,12 +1,34 @@
+# blog/views.py (relevant parts)
+
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-from .models import Post
-from django.contrib.auth.decorators import login_required
-from .forms import PostForm
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from .models import Post, Comment
+from .models import Post, Comment, Tag
 from .forms import PostForm, CommentForm
+
+# ---------------------------
+# Author-only mixins
+# ---------------------------
+
+class AuthorRequiredMixin(UserPassesTestMixin):
+    """Allow access only if the current user is the author of the object."""
+    raise_exception = True  # 403 instead of redirect
+    def test_func(self):
+        obj = self.get_object()
+        return obj.author == self.request.user
+
+class CommentAuthorRequiredMixin(UserPassesTestMixin):
+    raise_exception = True
+    def test_func(self):
+        obj = self.get_object()
+        return obj.author == self.request.user
+
+# ---------------------------
+# Post views
+# ---------------------------
 
 class PostListView(ListView):
     model = Post
@@ -21,9 +43,8 @@ class PostDetailView(DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["comments"] = self.object.comments.select_related("author").all()
-        ctx["comment_form"] = CommentForm()  # blank form for new comment
+        ctx["comment_form"] = CommentForm()
         return ctx
-
 
 class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
@@ -32,31 +53,46 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.author = self.request.user
-        return super().form_valid(form)
-
-class AuthorRequiredMixin(UserPassesTestMixin):
-    # Make failures clear (many graders expect 403 rather than silent redirect)
-    raise_exception = True
-    def test_func(self):
-        obj = self.get_object()
-        return obj.author == self.request.user
+        response = super().form_valid(form)
+        # apply tags from tags_input if present
+        tag_names = form.cleaned_data.get("tags_input", [])
+        tags = []
+        for name in tag_names:
+            tag, _ = Tag.objects.get_or_create(name=name)
+            tags.append(tag)
+        self.object.tags.set(tags)
+        return response
 
 class PostUpdateView(LoginRequiredMixin, AuthorRequiredMixin, UpdateView):
     model = Post
     form_class = PostForm
     template_name = "blog/post_form.html"
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        tag_names = form.cleaned_data.get("tags_input", [])
+        tags = []
+        for name in tag_names:
+            tag, _ = Tag.objects.get_or_create(name=name)
+            tags.append(tag)
+        self.object.tags.set(tags)
+        return response
+
 class PostDeleteView(LoginRequiredMixin, AuthorRequiredMixin, DeleteView):
     model = Post
     template_name = "blog/post_confirm_delete.html"
     success_url = reverse_lazy("post-list")
+
+# ---------------------------
+# Comment views
+# ---------------------------
+
 class CommentCreateView(LoginRequiredMixin, CreateView):
     model = Comment
     form_class = CommentForm
-    template_name = "blog/comment_form.html"  # we’ll also post from the post detail page
+    template_name = "blog/comment_form.html"
 
     def form_valid(self, form):
-        # post pk is in the URL as "pk"
         post = get_object_or_404(Post, pk=self.kwargs["pk"])
         form.instance.post = post
         form.instance.author = self.request.user
@@ -64,13 +100,6 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return self.object.post.get_absolute_url()
-
-
-class CommentAuthorRequiredMixin(UserPassesTestMixin):
-    raise_exception = True
-    def test_func(self):
-        return self.get_object().author == self.request.user
-
 
 class CommentUpdateView(LoginRequiredMixin, CommentAuthorRequiredMixin, UpdateView):
     model = Comment
@@ -80,10 +109,48 @@ class CommentUpdateView(LoginRequiredMixin, CommentAuthorRequiredMixin, UpdateVi
     def get_success_url(self):
         return self.object.post.get_absolute_url()
 
-
 class CommentDeleteView(LoginRequiredMixin, CommentAuthorRequiredMixin, DeleteView):
     model = Comment
     template_name = "blog/comment_confirm_delete.html"
 
     def get_success_url(self):
         return self.object.post.get_absolute_url()
+
+# ---------------------------
+# Tag + search views
+# ---------------------------
+
+class PostsByTagListView(ListView):
+    model = Post
+    template_name = "blog/post_list.html"
+    context_object_name = "posts"
+
+    def get_queryset(self):
+        slug = self.kwargs["slug"]
+        return Post.objects.filter(tags__slug=slug).distinct()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["active_tag"] = get_object_or_404(Tag, slug=self.kwargs["slug"])
+        ctx["tag_filter"] = True
+        return ctx
+
+class PostSearchListView(ListView):
+    model = Post
+    template_name = "blog/search_results.html"
+    context_object_name = "posts"
+
+    def get_queryset(self):
+        q = self.request.GET.get("q", "").strip()
+        if not q:
+            return Post.objects.none()
+        return Post.objects.filter(
+            Q(title__icontains=q) |
+            Q(content__icontains=q) |
+            Q(tags__name__icontains=q)
+        ).distinct()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["q"] = self.request.GET.get("q", "").strip()
+        return ctx
