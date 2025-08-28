@@ -1,78 +1,33 @@
-from django.shortcuts import render
-# posts/views.py
-from django.db.models import Q
-from rest_framework import viewsets, mixins, permissions
-from rest_framework.response import Response
-from .models import Post, Follow
-from .serializers import PostSerializer, FollowSerializer
+from rest_framework import viewsets, permissions, filters
+from rest_framework.pagination import PageNumberPagination
+from .models import Post, Comment
+from .serializers import PostSerializer, CommentSerializer
+from .permissions import IsOwnerOrReadOnly
 
-class IsAuthorOrReadOnly(permissions.BasePermission):
-    """
-    Read: anyone. Write: only the author of the object.
-    """
-    def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return getattr(obj, "author", None) == request.user
+class DefaultPagination(PageNumberPagination):
+    page_size = 10
 
 class PostViewSet(viewsets.ModelViewSet):
-    """
-    CRUD for posts.
-    - Auth required to create/update/delete.
-    - Only the author can update/delete.
-    - Filtering: ?author=<user_id>
-    - Search: ?q=keyword (in content)
-    """
     queryset = Post.objects.select_related("author").all()
     serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
+    pagination_class = DefaultPagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["title", "content"]          # Step 5: filtering/search
+    ordering_fields = ["created_at", "updated_at"]
 
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.select_related("author", "post", "post__author").all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
+    pagination_class = DefaultPagination
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ["created_at", "updated_at"]
+
+    # Optional: restrict to comments of a given post via query param ?post=<id>
     def get_queryset(self):
         qs = super().get_queryset()
-        author = self.request.query_params.get("author")
-        q = self.request.query_params.get("q")
-        if author:
-            qs = qs.filter(author_id=author)
-        if q:
-            qs = qs.filter(Q(content__icontains=q))
+        post_id = self.request.query_params.get("post")
+        if post_id:
+            qs = qs.filter(post_id=post_id)
         return qs
-
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
-
-class FollowViewSet(mixins.CreateModelMixin,
-                    mixins.DestroyModelMixin,
-                    viewsets.GenericViewSet):
-    """
-    POST /api/follow/      {"following": <user_id>}
-    DELETE /api/follow/<id>/    (unfollow by relation id)
-    """
-    serializer_class = FollowSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return Follow.objects.filter(follower=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(follower=self.request.user)
-
-class FeedViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """
-    GET /api/feed/ -> posts from users I follow
-    Optional: ?q=keyword
-    """
-    serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        following_ids = Follow.objects.filter(
-            follower=self.request.user
-        ).values_list("following_id", flat=True)
-        qs = Post.objects.filter(author_id__in=following_ids).select_related("author")
-        q = self.request.query_params.get("q")
-        if q:
-            qs = qs.filter(content__icontains=q)
-        return qs
-
-
-# Create your views here.
