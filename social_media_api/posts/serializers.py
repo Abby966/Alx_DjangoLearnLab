@@ -1,35 +1,26 @@
+# posts/serializers.py
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
-from .models import Post, Comment
-
-User = get_user_model()
-
-class AuthorMiniSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["id", "username"]
-
-class CommentSerializer(serializers.ModelSerializer):
-    author = AuthorMiniSerializer(read_only=True)
-
-    class Meta:
-        model = Comment
-        fields = ["id", "post", "author", "content", "created_at", "updated_at"]
-        read_only_fields = ["author", "created_at", "updated_at"]
-
-    def create(self, validated_data):
-        request = self.context["request"]
-        return Comment.objects.create(author=request.user, **validated_data)
+from .models import Post, Like
 
 class PostSerializer(serializers.ModelSerializer):
-    author = AuthorMiniSerializer(read_only=True)
-    comments_count = serializers.IntegerField(source="comments.count", read_only=True)
+    likes_count = serializers.IntegerField(source="likes.count", read_only=True)
+    is_liked = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
-        fields = ["id", "author", "title", "content", "created_at", "updated_at", "comments_count"]
-        read_only_fields = ["author", "created_at", "updated_at", "comments_count"]
+        fields = ["id", "author", "title", "content", "created_at", "updated_at",
+                  "likes_count", "is_liked"]
+        read_only_fields = ["author", "likes_count", "is_liked"]
 
-    def create(self, validated_data):
-        request = self.context["request"]
-        return Post.objects.create(author=request.user, **validated_data)
+    def get_is_liked(self, obj):
+        user = self.context["request"].user if "request" in self.context else None
+        if not user or not user.is_authenticated:
+            return False
+        return obj.likes.filter(user=user).exists()
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = ["id", "user", "post", "created_at"]
+        read_only_fields = ["id", "user", "created_at"]
