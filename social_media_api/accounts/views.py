@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,37 +12,44 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):
-        resp = super().create(request, *args, **kwargs)
-        user = self.serializer_class.Meta.model.objects.get(username=resp.data["username"])
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        # ensure token in response:
         token, _ = Token.objects.get_or_create(user=user)
-        return Response({"user": UserPublicSerializer(user, context={"request": request}).data,
-                         "token": token.key}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"user": UserPublicSerializer(user, context={"request": request}).data,
+             "token": token.key},
+            status=status.HTTP_201_CREATED
+        )
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data["user"]
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({"user": UserPublicSerializer(user, context={"request": request}).data,
-                         "token": token.key})
+        s = LoginSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        user = s.validated_data["user"]
+        token = s.validated_data["token"]
+        return Response(
+            {"user": UserPublicSerializer(user, context={"request": request}).data,
+             "token": token}
+        )
 
 class ProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request):
         return Response(UserPublicSerializer(request.user, context={"request": request}).data)
 
     def put(self, request):
-        serializer = ProfileUpdateSerializer(request.user, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        s = ProfileUpdateSerializer(request.user, data=request.data)
+        s.is_valid(raise_exception=True)
+        s.save()
         return Response(UserPublicSerializer(request.user, context={"request": request}).data)
 
     def patch(self, request):
-        serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        s = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
+        s.is_valid(raise_exception=True)
+        s.save()
         return Response(UserPublicSerializer(request.user, context={"request": request}).data)
-
-# Create your views here.
