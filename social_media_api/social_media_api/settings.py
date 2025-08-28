@@ -28,7 +28,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    "django.contrib.contenttypes",   # required for GenericForeignKey
+    "notifications", 
     # Third-party
     'rest_framework',
     'rest_framework.authtoken',
@@ -106,16 +107,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ---------------- Auth / DRF ----------------
 AUTH_USER_MODEL = 'accounts.User'
-
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
-        # "rest_framework_simplejwt.authentication.JWTAuthentication",  # enable later if you prefer JWT
-    ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
-    ],
-}
 INSTALLED_APPS += ['posts']
 REST_FRAMEWORK.update({
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
@@ -126,6 +117,12 @@ REST_FRAMEWORK.update({
     ],
 })
 
-
-
-
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        # "rest_framework_simplejwt.authentication.JWTAuthentication",  # enable later if you prefer JWT
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+}
