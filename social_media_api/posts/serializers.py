@@ -1,25 +1,35 @@
-# posts/serializers.py
 from rest_framework import serializers
-from .models import Post, Follow
+from django.contrib.auth import get_user_model
+from .models import Post, Comment
+
+User = get_user_model()
+
+class AuthorMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username"]
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = AuthorMiniSerializer(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ["id", "post", "author", "content", "created_at", "updated_at"]
+        read_only_fields = ["author", "created_at", "updated_at"]
+
+    def create(self, validated_data):
+        request = self.context["request"]
+        return Comment.objects.create(author=request.user, **validated_data)
 
 class PostSerializer(serializers.ModelSerializer):
-    author_username = serializers.ReadOnlyField(source="author.username")
+    author = AuthorMiniSerializer(read_only=True)
+    comments_count = serializers.IntegerField(source="comments.count", read_only=True)
 
     class Meta:
         model = Post
-        fields = ["id", "author", "author_username", "content", "media_url", "created_at"]
-        read_only_fields = ["author", "author_username", "created_at"]
+        fields = ["id", "author", "title", "content", "created_at", "updated_at", "comments_count"]
+        read_only_fields = ["author", "created_at", "updated_at", "comments_count"]
 
-    def validate_content(self, value):
-        if not value or not value.strip():
-            raise serializers.ValidationError("Content is required.")
-        return value
-
-class FollowSerializer(serializers.ModelSerializer):
-    follower_username = serializers.ReadOnlyField(source="follower.username")
-    following_username = serializers.ReadOnlyField(source="following.username")
-
-    class Meta:
-        model = Follow
-        fields = ["id", "follower", "following", "follower_username", "following_username", "created_at"]
-        read_only_fields = ["follower", "created_at"]
+    def create(self, validated_data):
+        request = self.context["request"]
+        return Post.objects.create(author=request.user, **validated_data)
