@@ -1,55 +1,51 @@
-from rest_framework import generics, permissions, status
+# accounts/views.py
+
+from django.contrib.auth import get_user_model
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.authtoken.models import Token
-from .serializers import (
-    RegisterSerializer, LoginSerializer,
-    UserPublicSerializer, ProfileUpdateSerializer
-)
+from rest_framework import status
 
-class RegisterView(generics.CreateAPIView):
-    serializer_class = RegisterSerializer
-    permission_classes = [permissions.AllowAny]
+User = get_user_model()
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        # ensure token in response:
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response(
-            {"user": UserPublicSerializer(user, context={"request": request}).data,
-             "token": token.key},
-            status=status.HTTP_201_CREATED
-        )
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def follow_user(request, user_id):
+    """Follow another user by id."""
+    if request.user.id == user_id:
+        return Response({"detail": "You cannot follow yourself."}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        target = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
-class LoginView(APIView):
-    permission_classes = [permissions.AllowAny]
+    request.user.following.add(target)  # update following relationship
+    return Response(
+        {
+            "detail": f"You now follow {target.username}.",
+            "following_count": request.user.following.count(),
+            "followers_count": target.followers.count(),
+        },
+        status=status.HTTP_200_OK,
+    )
 
-    def post(self, request):
-        s = LoginSerializer(data=request.data)
-        s.is_valid(raise_exception=True)
-        user = s.validated_data["user"]
-        token = s.validated_data["token"]
-        return Response(
-            {"user": UserPublicSerializer(user, context={"request": request}).data,
-             "token": token}
-        )
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def unfollow_user(request, user_id):
+    """Unfollow another user by id."""
+    if request.user.id == user_id:
+        return Response({"detail": "You cannot unfollow yourself."}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        target = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
-class ProfileView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        return Response(UserPublicSerializer(request.user, context={"request": request}).data)
-
-    def put(self, request):
-        s = ProfileUpdateSerializer(request.user, data=request.data)
-        s.is_valid(raise_exception=True)
-        s.save()
-        return Response(UserPublicSerializer(request.user, context={"request": request}).data)
-
-    def patch(self, request):
-        s = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
-        s.is_valid(raise_exception=True)
-        s.save()
-        return Response(UserPublicSerializer(request.user, context={"request": request}).data)
+    request.user.following.remove(target)  # update following relationship
+    return Response(
+        {
+            "detail": f"You unfollowed {target.username}.",
+            "following_count": request.user.following.count(),
+            "followers_count": target.followers.count(),
+        },
+        status=status.HTTP_200_OK,
+    )
