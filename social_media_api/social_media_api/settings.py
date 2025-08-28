@@ -4,38 +4,37 @@ Django 5.2.4
 """
 
 from pathlib import Path
-import os  # <-- added
-from datetime import timedelta  # (handy later if you switch to JWT)
+import os
+from datetime import timedelta
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ---------------- Security / Env ----------------
-# ❗ Replace hardcoded secrets in production. For now this keeps dev simple.
 SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY",
-    "django-insecure-u^#1ss+oo8mm5k#sj=n2=uc7t=)tl-)8c4x9!q7=w6=070@d(p"  # <-- keep only for local dev
+    "django-insecure-u^#1ss+oo8mm5k#sj=n2=uc7t=)tl-)8c4x9!q7=w6=070@d(p"
 )
-
-DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"  # <-- was True
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")  # <-- was []
+DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
 # ---------------- Apps ----------------
 INSTALLED_APPS = [
+    # Django
     'django.contrib.admin',
     'django.contrib.auth',
-    'django.contrib.contenttypes',
+    'django.contrib.contenttypes',     # keep once
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "django.contrib.contenttypes",   # required for GenericForeignKey
-    "notifications", 
+
     # Third-party
     'rest_framework',
     'rest_framework.authtoken',
 
-    # Local
+    # Local apps
     'accounts',
+    'posts',
+    'notifications',                   # for Notification model
 ]
 
 # ---------------- Middleware ----------------
@@ -54,7 +53,7 @@ ROOT_URLCONF = 'social_media_api.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates"],  # <-- optional, useful later
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -69,12 +68,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'social_media_api.wsgi.application'
 
 # ---------------- Database ----------------
-# Keep sqlite for now; swap to Postgres via env when deploying.
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
         'NAME': os.getenv('DB_NAME', BASE_DIR / 'db.sqlite3'),
-        # For Postgres you’d also set: USER, PASSWORD, HOST, PORT
     }
 }
 
@@ -88,41 +85,36 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # ---------------- I18N / TZ ----------------
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = os.getenv("TZ", "Africa/Nairobi")  # <-- was UTC
+TIME_ZONE = os.getenv("TZ", "Africa/Nairobi")
 USE_I18N = True
 USE_TZ = True
 
 # ---------------- Static & Media ----------------
-# Static (served by Django only in dev)
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'  # <-- added for collectstatic in prod
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 
-# Media (for profile pictures/uploads)
-MEDIA_URL = '/media/'          # <-- added
-MEDIA_ROOT = BASE_DIR / 'media'  # <-- added
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # ---------------- Primary key type ----------------
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ---------------- Auth / DRF ----------------
 AUTH_USER_MODEL = 'accounts.User'
-INSTALLED_APPS += ['posts']
-REST_FRAMEWORK.update({
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        # "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
     "DEFAULT_FILTER_BACKENDS": [
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
-    ],
-})
-
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
-        # "rest_framework_simplejwt.authentication.JWTAuthentication",  # enable later if you prefer JWT
-    ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
     ],
 }
